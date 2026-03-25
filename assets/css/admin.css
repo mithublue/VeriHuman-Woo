@@ -1,0 +1,165 @@
+/* VeriHuman AI Copy Generator – Admin Styles */
+
+#verihuman-box {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Primary Button */
+.verihuman-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    line-height: 1.4;
+}
+
+.verihuman-btn-primary {
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.35);
+}
+
+.verihuman-btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #4338CA, #6D28D9);
+    box-shadow: 0 4px 12px rgba(79,70,229,0.45);
+    transform: translateY(-1px);
+}
+
+.verihuman-btn-primary:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Spinner */
+.verihuman-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: verihuman-spin 0.7s linear infinite;
+}
+
+@keyframes verihuman-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Hint text */
+.verihuman-hint {
+    font-size: 11px;
+    color: #9CA3AF;
+    text-align: center;
+    margin: 6px 0 12px;
+    line-height: 1.4;
+}
+
+/* Status Messages */
+.verihuman-status {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.verihuman-status.success {
+    background: #ECFDF5;
+    color: #065F46;
+    border: 1px solid #A7F3D0;
+}
+
+.verihuman-status.error {
+    background: #FEF2F2;
+    color: #991B1B;
+    border: 1px solid #FECACA;
+}
+
+/* History Section */
+.verihuman-history {
+    border-top: 1px solid #E5E7EB;
+    margin-top: 14px;
+    padding-top: 12px;
+}
+
+.verihuman-history-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6B7280;
+    margin: 0 0 8px;
+}
+
+.verihuman-history-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.verihuman-history-item {
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.verihuman-history-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 11px;
+    color: #6B7280;
+}
+
+.verihuman-badge {
+    background: #EDE9FE;
+    color: #5B21B6;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 20px;
+}
+
+.verihuman-use-history,
+.verihuman-delete-history {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.verihuman-use-history {
+    background: #4F46E5;
+    color: #fff;
+    margin-right: 4px;
+}
+
+.verihuman-use-history:hover {
+    background: #4338CA;
+}
+
+.verihuman-delete-history {
+    background: transparent;
+    color: #EF4444;
+    border-color: #FCA5A5;
+}
+
+.verihuman-delete-history:hover {
+    background: #FEF2F2;
+}
