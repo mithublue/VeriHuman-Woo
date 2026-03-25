@@ -63,8 +63,18 @@ class Verihuman_Meta_Box
     public function render_meta_box(\WP_Post $post): void
     {
         $history = Verihuman_DB::get_history($post->ID, 5);
+        $api_key = get_option('verihuman_api_key', '');
+        $woo_settings_url = admin_url('admin.php?page=wc-settings&tab=verihuman');
         ?>
         <div id="verihuman-box">
+            <?php if (empty($api_key)): ?>
+                <div class="verihuman-notice verihuman-notice-error">
+                    ❌ <strong>Invalid or missing API key.</strong><br>
+                    <a href="<?php echo esc_url($woo_settings_url); ?>">Go to WooCommerce → Settings → VeriHuman AI</a> to add your
+                    key.
+                </div>
+            <?php endif; ?>
+
             <!-- Generate Button -->
             <button type="button" id="verihuman-generate-btn" class="verihuman-btn verihuman-btn-primary">
                 <span class="verihuman-btn-icon">✨</span>

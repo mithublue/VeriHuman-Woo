@@ -18,8 +18,9 @@ class Verihuman_Api_Handler
         }
 
         $api_key = get_option('verihuman_api_key', '');
+        error_log('[VeriHuman] API key from DB: ' . (empty($api_key) ? 'EMPTY' : 'Present (length: ' . strlen($api_key) . ')'));
         if (empty($api_key)) {
-            wp_send_json_error(['message' => 'API key is not configured. Go to Settings → VeriHuman AI to add your key.'], 400);
+            wp_send_json_error(['message' => 'API key is not configured. Go to WooCommerce → Settings → VeriHuman AI to add your key.'], 400);
         }
 
         $product_id = absint($_POST['product_id'] ?? 0);
@@ -83,7 +84,10 @@ class Verihuman_Api_Handler
             'language' => $language,
         ];
 
-        $response = wp_remote_post(VERIHUMAN_API_BASE . '/copy-gen', [
+        $api_url = VERIHUMAN_API_BASE . '/copy-gen';
+        error_log('[VeriHuman] Calling API: ' . $api_url);
+
+        $response = wp_remote_post($api_url, [
             'timeout' => 60,
             'headers' => [
                 'Authorization' => 'Bearer ' . $api_key,
@@ -93,14 +97,16 @@ class Verihuman_Api_Handler
         ]);
 
         if (is_wp_error($response)) {
+            error_log('[VeriHuman] API Error: ' . $response->get_error_message());
             wp_send_json_error(['message' => 'Could not reach VeriHuman API: ' . $response->get_error_message()], 502);
         }
 
         $code = wp_remote_retrieve_response_code($response);
         $body = json_decode(wp_remote_retrieve_body($response), true);
+        error_log('[VeriHuman] API Response Code: ' . $code . ' Body: ' . wp_remote_retrieve_body($response));
 
         if ($code !== 200) {
-            $error_msg = $body['error'] ?? 'Unknown error from VeriHuman API.';
+            $error_msg = $body['error'] ?? 'Unknown error from VeriHuman API (HTTP ' . $code . ').';
             wp_send_json_error(['message' => $error_msg], $code);
         }
 
