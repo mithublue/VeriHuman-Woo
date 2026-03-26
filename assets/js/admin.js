@@ -14,78 +14,139 @@
     }
 
     /**
-     * Insert HTML into the active editor — supports both Classic (TinyMCE) and Gutenberg.
+     * Get the active target editor ID based on UI toggle.
      */
-    function insertIntoEditor(html) {
+    function getTargetId() {
+        return $('input[name="verihuman_target"]:checked').val() === 'excerpt' ? 'excerpt' : 'content';
+    }
+
+    /**
+     * Get content from the editor (optionally only selection).
+     */
+    function getEditorContent(onlySelection) {
+        var targetId = getTargetId();
+
         // Gutenberg (Block Editor)
-        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+        if (typeof wp !== 'undefined' && wp.data && wp.data.select('core/block-editor')) {
             try {
-                var block = wp.blocks.createBlock('core/html', { content: html });
-                wp.data.dispatch('core/editor').insertBlocks(block);
-                return;
-            } catch (e) {
-                // fallthrough to TinyMCE
-            }
+                if (onlySelection) {
+                    var selectedBlocks = wp.data.select('core/block-editor').getSelectedBlocks();
+                    if (selectedBlocks.length > 0) {
+                        return selectedBlocks.map(function (block) {
+                            return block.attributes.content || '';
+                        }).join('\n\n');
+                    }
+                }
+                // Fallback to full content of specific area
+                if (targetId === 'excerpt') {
+                    return wp.data.select('core/editor').getEditedPostAttribute('excerpt') || '';
+                }
+                return wp.data.select('core/editor').getEditedPostContent() || '';
+            } catch (e) { }
         }
 
         // Classic Editor (TinyMCE)
-        if (typeof tinymce !== 'undefined' && tinymce.get('content')) {
-            tinymce.get('content').setContent(html);
+        if (typeof tinymce !== 'undefined' && tinymce.get(targetId)) {
+            var editor = tinymce.get(targetId);
+            return onlySelection ? editor.selection.getContent({ format: 'text' }) : editor.getContent();
+        }
+
+        // Plain textarea fallback
+        var $textarea = $('#' + targetId);
+        return $textarea.length ? $textarea.val() : '';
+    }
+
+    /**
+     * Insert HTML into the active editor.
+     */
+    function insertIntoEditor(html) {
+        var targetId = getTargetId();
+
+        // Gutenberg
+        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+            try {
+                if (targetId === 'excerpt') {
+                    wp.data.dispatch('core/editor').editPost({ excerpt: html });
+                } else {
+                    var block = wp.blocks.createBlock('core/freeform', { content: html });
+                    wp.data.dispatch('core/editor').insertBlocks(block);
+                }
+                return;
+            } catch (e) { }
+        }
+
+        // Classic Editor
+        if (typeof tinymce !== 'undefined' && tinymce.get(targetId)) {
+            var editor = tinymce.get(targetId);
+            if (editor.selection.getContent()) {
+                editor.selection.setContent(html);
+            } else {
+                editor.setContent(html);
+            }
             return;
         }
 
         // Plain textarea fallback
-        var $textarea = $('#content');
-        if ($textarea.length) {
-            $textarea.val(html);
-        }
+        var $textarea = $('#' + targetId);
+        if ($textarea.length) $textarea.val(html);
     }
 
     /**
-     * Trigger WordPress auto-save / save as draft.
-     * Returns a Promise that resolves when save is done (or skips if nothing changed).
+     * Trigger WordPress auto-save.
      */
     function autoSave() {
         return new Promise(function (resolve) {
-            // Gutenberg auto-save
             if (typeof wp !== 'undefined' && wp.data) {
                 try {
                     wp.data.dispatch('core/editor').savePost({ isAutosave: true });
-                    // Give WP a moment to complete
                     setTimeout(resolve, 800);
                     return;
-                } catch (e) { /* continue to classic */ }
+                } catch (e) { }
             }
-
-            // Classic Editor – click the hidden "Save Draft" if exists
             var $saveDraft = $('#save-post');
             if ($saveDraft.length) {
-                $saveDraft.one('click', function () {
-                    setTimeout(resolve, 600);
-                });
+                $saveDraft.one('click', function () { setTimeout(resolve, 600); });
                 $saveDraft.trigger('click');
             } else {
-                resolve();  // nothing to save, continue
+                resolve();
             }
         });
     }
 
-    // ─── Main: Generate copy ────────────────────────────────────────────────────
+    // ─── Selection Monitoring ───────────────────────────────────────────────────
+
+    function checkSelection() {
+        var selection = getEditorContent(true);
+        if (selection && selection.trim().length > 5) {
+            $('.verihuman-selection-notice').show();
+        } else {
+            $('.verihuman-selection-notice').hide();
+        }
+    }
+    setInterval(checkSelection, 2000);
+
+    // ─── Tabs ───────────────────────────────────────────────────────────────────
+
+    $(document).on('click', '.verihuman-tab-btn', function () {
+        var tab = $(this).data('tab');
+        $('.verihuman-tab-btn').removeClass('active');
+        $(this).addClass('active');
+        $('.verihuman-tab-content').removeClass('active');
+        $('#verihuman-tab-' + tab).addClass('active');
+        clearStatus();
+    });
+
+    // ─── Feature: Generate ──────────────────────────────────────────────────────
 
     $(document).on('click', '#verihuman-generate-btn', function () {
         var $btn = $(this);
-
-        $btn.prop('disabled', true);
-        $btn.find('.verihuman-btn-text').text('Generating…');
+        $btn.prop('disabled', true).find('.verihuman-spinner').show();
         $btn.find('.verihuman-btn-icon').hide();
-        $btn.find('.verihuman-spinner').show();
         clearStatus();
 
-        // Get the product ID from the page URL / post input
         var productId = $('#post_ID').val() || 0;
         var productName = $('#title').val() || $('#post_title').val() || '';
 
-        // Step 1: Auto-save → step 2: generate
         autoSave().then(function () {
             $.post(verihumanData.ajaxUrl, {
                 action: 'verihuman_generate_copy',
@@ -95,64 +156,114 @@
                 platform: verihumanData.platform,
                 tone: verihumanData.tone,
                 language: verihumanData.language,
+                target: getTargetId()
             })
                 .done(function (res) {
-                    if (res.success && res.data && res.data.generatedText) {
+                    if (res.success && res.data.generatedText) {
                         insertIntoEditor(res.data.generatedText);
-                        setStatus('✅ AI copy generated and inserted into the editor! Refresh to see updated history.', 'success');
+                        setStatus('✅ AI copy generated!', 'success');
                     } else {
-                        var errMsg = (res.data && res.data.message) ? res.data.message : 'Unknown error.';
-                        setStatus('❌ ' + errMsg, 'error');
+                        setStatus('❌ ' + (res.data.message || 'Error'), 'error');
                     }
                 })
-                .fail(function (xhr) {
-                    var msg = 'Request failed.';
-                    try {
-                        var json = JSON.parse(xhr.responseText);
-                        if (json && json.data && json.data.message) msg = json.data.message;
-                    } catch (e) { }
-                    setStatus('❌ ' + msg, 'error');
-                })
+                .fail(function () { setStatus('❌ API Request failed.', 'error'); })
                 .always(function () {
-                    $btn.prop('disabled', false);
-                    $btn.find('.verihuman-btn-text').text('Generate AI Copy');
+                    $btn.prop('disabled', false).find('.verihuman-spinner').hide();
                     $btn.find('.verihuman-btn-icon').show();
-                    $btn.find('.verihuman-spinner').hide();
                 });
         });
     });
 
-    // ─── History: Use This Copy ─────────────────────────────────────────────────
+    // ─── Feature: Detect ────────────────────────────────────────────────────────
 
-    $(document).on('click', '.verihuman-use-history', function () {
-        var html = $(this).data('copy');
-        if (html) {
-            insertIntoEditor(html);
-            setStatus('✅ Historical copy inserted into the editor.', 'success');
-        }
-    });
-
-    // ─── History: Delete ────────────────────────────────────────────────────────
-
-    $(document).on('click', '.verihuman-delete-history', function () {
+    $(document).on('click', '#verihuman-detect-btn', function () {
         var $btn = $(this);
-        var id = $btn.data('id');
-        var nonce = $btn.data('nonce');
+        var text = getEditorContent(true) || getEditorContent(false);
 
-        if (!confirm('Delete this copy from history?')) return;
+        if (!text || text.length < 20) {
+            setStatus('❌ Text too short to analyze.', 'error');
+            return;
+        }
+
+        $btn.prop('disabled', true).find('.verihuman-spinner').show();
+        $('#verihuman-detect-result').hide();
 
         $.post(verihumanData.ajaxUrl, {
-            action: 'verihuman_delete_history',
-            nonce: nonce,
-            history_id: id,
+            action: 'verihuman_detect_text',
+            nonce: verihumanData.nonce,
+            text: text
         })
             .done(function (res) {
                 if (res.success) {
-                    $btn.closest('.verihuman-history-item').fadeOut(300, function () {
-                        $(this).remove();
-                    });
+                    var html = '<strong>Score: ' + res.data.score + '% AI</strong><br>';
+                    html += '<small>' + res.data.verdict + '</small><br>';
+                    html += '<p style="font-size:11px; margin-top:5px;">' + res.data.reason + '</p>';
+                    $('#verihuman-detect-result').html(html).fadeIn();
+                } else {
+                    setStatus('❌ ' + (res.data.message || 'Error'), 'error');
                 }
-            });
+            })
+            .always(function () { $btn.prop('disabled', false).find('.verihuman-spinner').hide(); });
+    });
+
+    // ─── Feature: Humanize ──────────────────────────────────────────────────────
+
+    $(document).on('click', '#verihuman-humanize-btn', function () {
+        var $btn = $(this);
+        var text = getEditorContent(true) || getEditorContent(false);
+        var tone = $('#verihuman-humanize-tone').val();
+
+        if (!text || text.length < 20) {
+            setStatus('❌ Text too short to humanize.', 'error');
+            return;
+        }
+
+        $btn.prop('disabled', true).find('.verihuman-spinner').show();
+        $('#verihuman-humanize-result').hide();
+
+        $.post(verihumanData.ajaxUrl, {
+            action: 'verihuman_humanize_text',
+            nonce: verihumanData.nonce,
+            text: text,
+            tone: tone
+        })
+            .done(function (res) {
+                if (res.success) {
+                    $('#verihuman-humanize-result .verihuman-result-text').text(res.data.humanizedText);
+                    $('#verihuman-humanize-result').fadeIn();
+                } else {
+                    setStatus('❌ ' + (res.data.message || 'Error'), 'error');
+                }
+            })
+            .always(function () { $btn.prop('disabled', false).find('.verihuman-spinner').hide(); });
+    });
+
+    $(document).on('click', '#verihuman-apply-humanized', function () {
+        var text = $('#verihuman-humanize-result .verihuman-result-text').text();
+        if (text) {
+            insertIntoEditor(text);
+            setStatus('✅ Humanized text applied!', 'success');
+            $('#verihuman-humanize-result').hide();
+        }
+    });
+
+    // ─── History Logic ──────────────────────────────────────────────────────────
+
+    $(document).on('click', '.verihuman-use-history', function () {
+        insertIntoEditor($(this).data('copy'));
+        setStatus('✅ Used history copy.', 'success');
+    });
+
+    $(document).on('click', '.verihuman-delete-history', function () {
+        var $btn = $(this);
+        if (!confirm('Delete this?')) return;
+        $.post(verihumanData.ajaxUrl, {
+            action: 'verihuman_delete_history',
+            nonce: $btn.data('nonce'),
+            history_id: $btn.data('id')
+        }).done(function (res) {
+            if (res.success) $btn.closest('.verihuman-history-item').fadeOut();
+        });
     });
 
 }(jQuery));

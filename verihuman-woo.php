@@ -16,7 +16,15 @@ defined('ABSPATH') || exit;
 define('VERIHUMAN_VERSION', '1.0.0');
 define('VERIHUMAN_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('VERIHUMAN_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('VERIHUMAN_API_BASE', 'https://verihuman.xyz/api/v1');
+
+// Define Environment: 'development' or 'production'
+define('VERIHUMAN_ENV', 'development');
+
+if (VERIHUMAN_ENV === 'development') {
+    define('VERIHUMAN_API_BASE', 'http://localhost:3000/api/v1');
+} else {
+    define('VERIHUMAN_API_BASE', 'https://verihuman.xyz/api/v1');
+}
 
 // Autoload classes
 require_once VERIHUMAN_PLUGIN_DIR . 'includes/class-db.php';
