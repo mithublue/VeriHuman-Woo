@@ -1,4 +1,4 @@
-# 🚀 VeriHuman AI Toolbox for WooCommerce
+# VeriHuman AI Toolbox for WooCommerce
 
 **Transform your WooCommerce store into an AI-powered conversion machine!**
 
@@ -56,7 +56,7 @@ VeriHuman speaks your language! Currently supports:
 
 ---
 
-## 🚀 Get Started for FREE
+## Get Started for FREE
 Stop wasting hours on writing descriptions. Let **VeriHuman** do the heavy lifting while you focus on scaling your business.
 
 **[Visit VeriHuman.xyz to get your API Key & Start Generating ↗️](https://verihuman.xyz)**
