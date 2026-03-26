@@ -166,7 +166,13 @@
                         setStatus('❌ ' + (res.data.message || 'Error'), 'error');
                     }
                 })
-                .fail(function () { setStatus('❌ API Request failed.', 'error'); })
+                .fail(function (xhr) {
+                    var msg = 'API Request failed.';
+                    if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+                        msg = xhr.responseJSON.data.message;
+                    }
+                    setStatus('❌ ' + msg, 'error');
+                })
                 .always(function () {
                     $btn.prop('disabled', false).find('.verihuman-spinner').hide();
                     $btn.find('.verihuman-btn-icon').show();
@@ -203,6 +209,13 @@
                     setStatus('❌ ' + (res.data.message || 'Error'), 'error');
                 }
             })
+            .fail(function (xhr) {
+                var msg = 'Detection failed.';
+                if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+                    msg = xhr.responseJSON.data.message;
+                }
+                setStatus('❌ ' + msg, 'error');
+            })
             .always(function () { $btn.prop('disabled', false).find('.verihuman-spinner').hide(); });
     });
 
@@ -234,6 +247,13 @@
                 } else {
                     setStatus('❌ ' + (res.data.message || 'Error'), 'error');
                 }
+            })
+            .fail(function (xhr) {
+                var msg = 'Humanization failed.';
+                if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+                    msg = xhr.responseJSON.data.message;
+                }
+                setStatus('❌ ' + msg, 'error');
             })
             .always(function () { $btn.prop('disabled', false).find('.verihuman-spinner').hide(); });
     });
