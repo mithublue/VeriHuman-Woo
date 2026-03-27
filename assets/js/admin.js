@@ -147,15 +147,19 @@
         var productId = $('#post_ID').val() || 0;
         var productName = $('#title').val() || $('#post_title').val() || '';
 
+        var tone = $('#verihuman-gen-tone').val();
+        var language = $('#verihuman-gen-language').val();
+        var copyLength = $('input[name="verihuman_gen_length"]:checked').val();
+
         autoSave().then(function () {
             $.post(verihumanData.ajaxUrl, {
                 action: 'verihuman_generate_copy',
                 nonce: verihumanData.nonce,
                 product_id: productId,
                 product_name: productName,
-                platform: verihumanData.platform,
-                tone: verihumanData.tone,
-                language: verihumanData.language,
+                tone: tone,
+                language: language,
+                copy_length: copyLength,
                 target: getTargetId()
             })
                 .done(function (res) {

@@ -44,13 +44,26 @@ class Verihuman_Meta_Box
         wp_enqueue_style('verihuman-admin-css', VERIHUMAN_PLUGIN_URL . 'assets/css/admin.css', [], VERIHUMAN_VERSION);
         wp_enqueue_script('verihuman-admin-js', VERIHUMAN_PLUGIN_URL . 'assets/js/admin.js', ['jquery'], VERIHUMAN_VERSION, true);
 
+        // Match WP locale to options
+        $wp_lang = explode('_', get_locale())[0];
+        $default_lang = 'english';
+        if ($wp_lang === 'bn')
+            $default_lang = 'bengali';
+        elseif ($wp_lang === 'ar')
+            $default_lang = 'arabic';
+
+        // Check user settings override
+        $user_lang = get_option('verihuman_default_language', '');
+        if (!empty($user_lang))
+            $default_lang = $user_lang;
+
         // Pass data to JS
         wp_localize_script('verihuman-admin-js', 'verihumanData', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('verihuman_nonce'),
-            'platform' => get_option('verihuman_default_platform', 'woocommerce'),
             'tone' => get_option('verihuman_default_tone', 'professional'),
-            'language' => get_option('verihuman_default_language', 'english'),
+            'copy_length' => get_option('verihuman_default_copy_length', 'Medium'),
+            'language' => $default_lang,
         ]);
     }
 
@@ -81,12 +94,64 @@ class Verihuman_Meta_Box
 
             <!-- Tab: Generate -->
             <div id="verihuman-tab-generate" class="verihuman-tab-content active">
-                <button type="button" id="verihuman-generate-btn" class="verihuman-btn verihuman-btn-primary">
+
+                <?php
+                // Fetch settings for pre-selecting the UI
+                $wp_lang = explode('_', get_locale())[0];
+                $default_lang = 'english';
+                if ($wp_lang === 'bn')
+                    $default_lang = 'bengali';
+                elseif ($wp_lang === 'ar')
+                    $default_lang = 'arabic';
+
+                $user_lang = get_option('verihuman_default_language', '');
+                if (!empty($user_lang))
+                    $default_lang = $user_lang;
+
+                $default_tone = get_option('verihuman_default_tone', 'professional');
+                $default_copy_length = get_option('verihuman_default_copy_length', 'Medium');
+                ?>
+
+                <div class="verihuman-field-group" style="margin-bottom: 12px; padding: 10px;">
+                    <label style="margin-bottom:4px;">Tone</label>
+                    <div style="display: flex; gap: 8px;">
+                        <select id="verihuman-gen-tone" style="flex:1; padding: 4px 8px; font-size:11px;">
+                            <option value="professional" <?php selected($default_tone, 'professional'); ?>>Professional</option>
+                            <option value="respectful_aspirational" <?php selected($default_tone, 'respectful_aspirational'); ?>>Respectful & Aspirational</option>
+                            <option value="persuasive" <?php selected($default_tone, 'persuasive'); ?>>Persuasive</option>
+                            <option value="friendly" <?php selected($default_tone, 'friendly'); ?>>Friendly</option>
+                            <option value="luxury" <?php selected($default_tone, 'luxury'); ?>>Luxury & Elegant</option>
+                            <option value="urgent" <?php selected($default_tone, 'urgent'); ?>>Urgent</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="verihuman-field-group" style="margin-bottom: 12px; padding: 10px;">
+                    <label style="margin-bottom:4px;">Copy Length</label>
+                    <div class="verihuman-length-toggle">
+                        <label class="vh-toggle"><input type="radio" name="verihuman_gen_length" value="Short" <?php checked($default_copy_length, 'Short'); ?>> Short</label>
+                        <label class="vh-toggle"><input type="radio" name="verihuman_gen_length" value="Medium" <?php checked($default_copy_length, 'Medium'); ?>> Medium</label>
+                        <label class="vh-toggle"><input type="radio" name="verihuman_gen_length" value="Long" <?php checked($default_copy_length, 'Long'); ?>> Long</label>
+                        <label class="vh-toggle"><input type="radio" name="verihuman_gen_length" value="Custom" <?php checked($default_copy_length, 'Custom'); ?>> Custom</label>
+                    </div>
+                </div>
+
+                <div class="verihuman-field-group" style="margin-bottom: 12px; padding: 10px;">
+                    <label style="margin-bottom:4px;">Language</label>
+                    <select id="verihuman-gen-language" style="padding: 4px 8px; font-size:11px;">
+                        <option value="english" <?php selected($default_lang, 'english'); ?>>English</option>
+                        <option value="bengali" <?php selected($default_lang, 'bengali'); ?>>Bengali</option>
+                        <option value="arabic" <?php selected($default_lang, 'arabic'); ?>>Arabic</option>
+                    </select>
+                </div>
+
+                <button type="button" id="verihuman-generate-btn" class="verihuman-btn verihuman-btn-primary"
+                    style="margin-top:10px;">
                     <span class="verihuman-btn-icon">✨</span>
                     <span class="verihuman-btn-text">Generate AI Copy</span>
                     <span class="verihuman-spinner" style="display:none;"></span>
                 </button>
-                <p class="verihuman-hint">Saves draft first, then generates AI copy using product data.</p>
+                <p class="verihuman-hint">Saves draft first, then auto-fills editor.</p>
             </div>
 
             <!-- Tab: Detect -->
@@ -152,7 +217,7 @@ class Verihuman_Meta_Box
                                 <div class="verihuman-history-meta">
                                     <span class="verihuman-badge"><?php echo esc_html(ucfirst($item['platform'] ?? 'AI')); ?></span>
                                     <span>
-                                        <?php 
+                                        <?php
                                         $time = !empty($item['created_at']) ? strtotime($item['created_at']) : 0;
                                         echo $time ? esc_html(human_time_diff($time, current_time('timestamp'))) . ' ago' : 'Just now';
                                         ?>

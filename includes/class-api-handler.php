@@ -110,9 +110,9 @@ class Verihuman_Api_Handler
 
         $product_id = absint($_POST['product_id'] ?? 0);
         $product_name = sanitize_text_field($_POST['product_name'] ?? '');
-        $platform = sanitize_text_field($_POST['platform'] ?? 'woocommerce');
         $tone = sanitize_text_field($_POST['tone'] ?? 'professional');
         $language = sanitize_text_field($_POST['language'] ?? 'english');
+        $copy_length = sanitize_text_field($_POST['copy_length'] ?? 'Medium');
 
         // Collect extra product context (tags, categories, attributes, price)
         $features = '';
@@ -163,9 +163,9 @@ class Verihuman_Api_Handler
             'features' => trim($features),
             'keywords' => $keywords,
             'audience' => 'online shoppers',
-            'platform' => $platform,
+            'platform' => 'woocommerce',
             'tone' => $tone,
-            'copyLength' => 'Medium',
+            'copyLength' => $copy_length,
             'language' => $language,
         ];
 
@@ -202,7 +202,7 @@ class Verihuman_Api_Handler
 
         // Save to WP custom table history
         if ($product_id > 0 && !empty($generated)) {
-            Verihuman_DB::save_history($product_id, $product_name, $generated, $platform, $tone);
+            Verihuman_DB::save_history($product_id, $product_name, $generated, 'woocommerce', $tone);
         }
 
         wp_send_json_success(['generatedText' => $generated]);

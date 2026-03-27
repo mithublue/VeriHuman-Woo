@@ -94,22 +94,6 @@ class Verihuman_Settings
                 'desc_tip' => false,
             ],
 
-            // Default Platform
-            [
-                'title' => __('Default Platform', 'verihuman-woo'),
-                'id' => 'verihuman_default_platform',
-                'type' => 'select',
-                'default' => 'woocommerce',
-                'options' => [
-                    'woocommerce' => __('WooCommerce Product', 'verihuman-woo'),
-                    'ecommerce' => __('General E-Commerce (Amazon / Shopify)', 'verihuman-woo'),
-                    'noon' => __('Noon', 'verihuman-woo'),
-                    'social' => __('Social Media (Facebook / Instagram)', 'verihuman-woo'),
-                    'google_ads' => __('Google Ads', 'verihuman-woo'),
-                    'blog' => __('Blog / SEO Article', 'verihuman-woo'),
-                ],
-            ],
-
             // Default Tone
             [
                 'title' => __('Default Tone', 'verihuman-woo'),
@@ -136,6 +120,20 @@ class Verihuman_Settings
                     'english' => __('English', 'verihuman-woo'),
                     'bengali' => __('Bengali (বাংলা)', 'verihuman-woo'),
                     'arabic' => __('Arabic (العربية)', 'verihuman-woo'),
+                ],
+            ],
+
+            // Default Copy Length
+            [
+                'title' => __('Default Copy Length', 'verihuman-woo'),
+                'id' => 'verihuman_default_copy_length',
+                'type' => 'select',
+                'default' => 'Medium',
+                'options' => [
+                    'Short' => __('Short', 'verihuman-woo'),
+                    'Medium' => __('Medium', 'verihuman-woo'),
+                    'Long' => __('Long', 'verihuman-woo'),
+                    'Custom' => __('Custom', 'verihuman-woo'),
                 ],
             ],
 
