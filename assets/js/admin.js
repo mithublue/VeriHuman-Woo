@@ -290,4 +290,145 @@
         });
     });
 
+    // ─── Bulk Generation Logic ──────────────────────────────────────────────
+
+    var bulkTotal = 0;
+    var bulkProcessed = 0;
+    var bulkQueue = [];
+    var isBulkRunning = false;
+
+    $(document).on('change', '#vh-bulk-all-cats', function () {
+        $('#vh-cat-list').toggle(!this.checked);
+    });
+
+    $(document).on('change', 'input[name="vh_bulk_length"]', function () {
+        if ($(this).val() === 'Custom') {
+            $('#vh-bulk-custom-length-wrap').slideDown(200);
+        } else {
+            $('#vh-bulk-custom-length-wrap').slideUp(200);
+        }
+    });
+
+    $(document).on('click', '#vh-bulk-start', function () {
+        if (isBulkRunning) return;
+
+        var $btn = $(this);
+        var originalText = $btn.text();
+        $btn.prop('disabled', true).text('Initializing...');
+
+        var selectedCats = [];
+        if (!$('#vh-bulk-all-cats').is(':checked')) {
+            $('.vh-cat-item:checked').each(function () { selectedCats.push($(this).val()); });
+        }
+
+        var statuses = $('#vh-bulk-status').val() || ['publish'];
+
+        // Step 1: Analyze and find products
+        $.post(verihumanData.ajaxUrl, {
+            action: 'verihuman_bulk_analyze',
+            nonce: verihumanData.nonce,
+            target: $('#vh-bulk-target').val(),
+            scope: $('#vh-bulk-scope').val(),
+            status: statuses,
+            categories: selectedCats
+        }).done(function (res) {
+            if (res.success && res.data.ids && res.data.ids.length > 0) {
+                bulkQueue = res.data.ids;
+                bulkTotal = bulkQueue.length;
+                bulkProcessed = 0;
+                isBulkRunning = true;
+
+                // Disable form
+                $('table.form-table select, table.form-table input').prop('disabled', true);
+
+                // Prepare UI
+                $('#vh-bulk-summary').slideUp();
+                $('#vh-bulk-progress-wrap').slideDown();
+                $('#vh-bulk-log').empty();
+                $('#vh-total').text(bulkTotal);
+                $('#vh-processed').text(0);
+                $('#vh-percent').text('0%');
+                $('#vh-progress-bar').css('width', '0%');
+
+                addBulkLog('🚀 Starting generation for ' + bulkTotal + ' products...', 'info');
+
+                // Step 2: Start processing loop
+                processNextBulkItem();
+            } else {
+                alert('No products found matching your active filters (Status/Categories/Scope).');
+                $btn.prop('disabled', false).text(originalText);
+            }
+        }).fail(function () {
+            alert('Error analyzing selection.');
+            $btn.prop('disabled', false).text(originalText);
+        });
+    });
+
+    function processNextBulkItem() {
+        if (!isBulkRunning || bulkQueue.length === 0) {
+            if (bulkQueue.length === 0) {
+                addBulkLog('🎉 All done!', 'success');
+            }
+            $('#vh-bulk-stop').text('Clear & Reset').addClass('button-secondary').removeClass('button-link-delete');
+            return;
+        }
+
+        var productId = bulkQueue.shift();
+
+        var lengthVal = $('input[name="vh_bulk_length"]:checked').val();
+        if (lengthVal === 'Custom') {
+            var inputWords = $('#vh-bulk-custom-length').val();
+            if (inputWords && inputWords > 0) {
+                lengthVal = inputWords;
+            }
+        }
+
+        $.post(verihumanData.ajaxUrl, {
+            action: 'verihuman_bulk_process_item',
+            nonce: verihumanData.nonce,
+            product_id: productId,
+            target: $('#vh-bulk-target').val(),
+            tone: $('#vh-bulk-tone').val(),
+            language: $('#vh-bulk-lang').val(),
+            copy_length: lengthVal
+        }).done(function (res) {
+            if (res.success) {
+                addBulkLog('✅ Generated description for ' + res.data.name, 'success');
+            } else {
+                addBulkLog('❌ Failed: ' + (res.data.message || 'Error'), 'error');
+            }
+        }).fail(function () {
+            addBulkLog('❌ Request failed for ID ' + productId, 'error');
+        }).always(function () {
+            bulkProcessed++;
+            var percent = Math.round((bulkProcessed / bulkTotal) * 100);
+            $('#vh-processed').text(bulkProcessed);
+            $('#vh-percent').text(percent + '%');
+            $('#vh-progress-bar').css('width', percent + '%');
+
+            // Artificial delay to be gentle on API/Server
+            setTimeout(processNextBulkItem, 500);
+        });
+    }
+
+    function addBulkLog(msg, type) {
+        var $log = $('#vh-bulk-log');
+        $log.prepend('<li class="vh-log-' + type + '">' + msg + '</li>');
+    }
+
+    $(document).on('click', '#vh-bulk-stop', function () {
+        if (isBulkRunning) {
+            if (confirm('Stop the bulk process?')) {
+                isBulkRunning = false;
+                addBulkLog('🛑 Process stopped by user.', 'error');
+                $(this).text('Clear & Reset').addClass('button-secondary');
+            }
+        } else {
+            // Reset UI
+            if (confirm('Reset and start over?')) {
+                location.reload();
+            }
+        }
+    });
+
 }(jQuery));

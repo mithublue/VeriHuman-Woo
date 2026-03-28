@@ -319,3 +319,14 @@
 .verihuman-delete-history {
     color: #EF4444;
 }
+
+/* ─── Bulk Generation Styles (Minimal) ───────────────────────── */
+
+/* Log Panel overrides */
+.vh-log-success {
+    color: #34D399;
+}
+
+.vh-log-error {
+    color: #F87171;
+}
