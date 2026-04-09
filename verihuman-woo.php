@@ -18,7 +18,7 @@ define('VERIHUMAN_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('VERIHUMAN_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 // Define Environment: 'development' or 'production'
-define('VERIHUMAN_ENV', 'development');
+define('VERIHUMAN_ENV', 'production');
 
 if (VERIHUMAN_ENV === 'development') {
     define('VERIHUMAN_API_BASE', 'http://localhost:3000/api/v1');
